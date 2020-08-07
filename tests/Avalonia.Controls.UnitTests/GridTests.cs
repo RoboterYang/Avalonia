@@ -1811,6 +1811,23 @@ namespace Avalonia.Controls.UnitTests
             Assert.Equal(10, grid.Children[1].Bounds.Width);
         }
 
+
+        [Fact]
+        public void Handle_Adding_Empty_Column_Or_Row_Definitions()
+        {
+            var grid = new Grid();
+
+            grid.ColumnDefinitions = new ColumnDefinitions();
+            grid.RowDefinitions = new RowDefinitions();
+
+            var size = new Size(100, 100);
+            grid.Measure(size);
+            grid.Arrange(new Rect(size));
+
+            Assert.True(grid.IsMeasureValid);
+            Assert.True(grid.IsArrangeValid); 
+        }
+
         private static void Change_Property_And_Verify_Measure_Requested(Grid grid, Action change)
         {
             grid.Measure(new Size(100, 100));
