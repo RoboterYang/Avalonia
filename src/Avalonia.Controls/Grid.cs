@@ -174,21 +174,12 @@ namespace Avalonia.Controls
         {
             get
             {
-                if (_data is null)
-                    _data = new ExtendedData();
-
-                if (_data.ColumnDefinitions is null)
-                {
-                    _data.ColumnDefinitions = new ColumnDefinitions() { Parent = this };
-                    SetValue(ColumnDefinitionsProperty, _data.ColumnDefinitions);
-                }
 
                 return GetValue(ColumnDefinitionsProperty);
             }
             set
             {
-                SynchronizeColumnDefinitions(this, value);
-                SetValue(ColumnDefinitionsProperty, _data.ColumnDefinitions);
+                SetValue(ColumnDefinitionsProperty, value);
             }
         }
 
@@ -199,19 +190,11 @@ namespace Avalonia.Controls
         {
             get
             {
-                if (_data == null) { _data = new ExtendedData(); }
-                if (_data.RowDefinitions == null)
-                {
-                    _data.RowDefinitions = new RowDefinitions() { Parent = this };
-                    SetValue(RowDefinitionsProperty, _data.RowDefinitions);
-                }
-
                 return GetValue(RowDefinitionsProperty);
             }
             set
             {
-                SynchronizeRowDefinitions(this, value);
-                SetValue(RowDefinitionsProperty, _data.RowDefinitions);
+                SetValue(RowDefinitionsProperty, value);
             }
         }
 
@@ -680,17 +663,27 @@ namespace Avalonia.Controls
         /// </summary> 
         internal bool ColumnDefinitionsDirty
         {
-            get => ColumnDefinitions?.IsDirty ?? false;
-            set => ColumnDefinitions.IsDirty = value;
+            get
+            {
+                _c1 = _c1 || (_data?.ColumnDefinitions?.IsDirty ?? true);
+                return _c1;
+            }
+            set => _c1 = value;
         }
+
+        bool _c1, _r1;
 
         /// <summary>
         /// Convenience accessor to ValidDefinitionsVStructure bit flag.
         /// </summary>
         internal bool RowDefinitionsDirty
         {
-            get => RowDefinitions?.IsDirty ?? false;
-            set => RowDefinitions.IsDirty = value;
+            get
+            {
+                _r1 = _r1 || (_data?.RowDefinitions?.IsDirty ?? true);
+                return _r1;
+            }
+            set => _r1 = value;
         }
 
         /// <summary>
@@ -823,6 +816,7 @@ namespace Avalonia.Controls
         {
             if (ColumnDefinitionsDirty)
             {
+                sd++;
                 ExtendedData extData = ExtData;
 
                 if (extData.ColumnDefinitions == null)
@@ -851,6 +845,8 @@ namespace Avalonia.Controls
 
             Debug.Assert(ExtData.DefinitionsU != null && ExtData.DefinitionsU.Count > 0);
         }
+
+        int sd = 0;
 
         /// <summary>
         /// Initializes DefinitionsV memeber either to user supplied RowDefinitions collection
@@ -2448,12 +2444,22 @@ namespace Avalonia.Controls
             if (colDef is null)
                 return;
 
-            if (target._data is null)
-                target._data = new ExtendedData();
-
             colDef.IsDirty = true;
             colDef.Parent = target;
-            target._data.ColumnDefinitions = colDef;
+
+            if (target._data is null)
+            {
+                target._data = new ExtendedData();
+            }
+
+            if (colDef.Count == 0)
+            {
+                target._data.ColumnDefinitions = new ColumnDefinitions() { new ColumnDefinition() { Parent = target } };
+            }
+            else
+            {
+                target._data.ColumnDefinitions = colDef;
+            }
         }
 
         private static void RowDefinitionsPropertyChanged(Grid target, AvaloniaPropertyChangedEventArgs rowDef)
@@ -2471,12 +2477,22 @@ namespace Avalonia.Controls
             if (rowDef is null)
                 return;
 
-            if (target._data is null)
-                target._data = new ExtendedData();
-
             rowDef.IsDirty = true;
             rowDef.Parent = target;
-            target._data.RowDefinitions = rowDef;
+
+            if (target._data is null)
+            {
+                target._data = new ExtendedData();
+            }
+
+            if (rowDef.Count == 0)
+            {
+                target._data.RowDefinitions = new RowDefinitions() { new RowDefinition() { Parent = target } };
+            }
+            else
+            {
+                target._data.RowDefinitions = rowDef;
+            }
         }
 
         /// <summary>
@@ -2617,7 +2633,7 @@ namespace Avalonia.Controls
             get { return (!CheckFlagsAnd(Flags.ValidCellsStructure)); }
             set { SetFlags(!value, Flags.ValidCellsStructure); }
         }
- 
+
         /// <summary>
         /// Convenience accessor to ListenToNotifications bit flag.
         /// </summary>
@@ -2779,14 +2795,13 @@ namespace Avalonia.Controls
         /// Defines the <see cref="ColumnDefinitions"/> property.
         /// </summary>
         public static readonly StyledProperty<ColumnDefinitions> ColumnDefinitionsProperty =
-            AvaloniaProperty.Register<Grid, ColumnDefinitions>(nameof(ColumnDefinitions));
+            AvaloniaProperty.Register<Grid, ColumnDefinitions>(nameof(ColumnDefinitions), new ColumnDefinitions());
 
         /// <summary>
         /// Defines the <see cref="RowDefinitions"/> property.
         /// </summary>
         public static readonly StyledProperty<RowDefinitions> RowDefinitionsProperty =
-            AvaloniaProperty.Register<Grid, RowDefinitions>(nameof(RowDefinitions));
-
+            AvaloniaProperty.Register<Grid, RowDefinitions>(nameof(RowDefinitions), new RowDefinitions());
 
         /// <summary>
         /// Defines the <see cref="ShowGridLines"/> property.

@@ -52,6 +52,9 @@ namespace Avalonia.Controls
             }
 
             IsDirty = true;
+            if(Parent is null) return;
+            Parent.ColumnDefinitionsDirty = true;
+            Parent.RowDefinitionsDirty = true;
         }
     }
 }
