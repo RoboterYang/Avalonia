@@ -38,6 +38,12 @@ namespace Avalonia.Controls
         public static readonly new StyledProperty<SelectionMode> SelectionModeProperty = 
             SelectingItemsControl.SelectionModeProperty;
 
+        /// <summary>
+        /// Defines the <see cref="WrapSelection"/> property.
+        /// </summary>
+        public static readonly StyledProperty<bool> WrapSelectionProperty =
+            AvaloniaProperty.Register<ListBox, bool>(nameof(WrapSelection));
+
         private IScrollable? _scroll;
 
         static ListBox()
@@ -50,8 +56,8 @@ namespace Avalonia.Controls
         /// </summary>
         public IScrollable? Scroll
         {
-            get { return _scroll; }
-            private set { SetAndRaise(ScrollProperty, ref _scroll, value); }
+            get => _scroll;
+            private set => SetAndRaise(ScrollProperty, ref _scroll, value);
         }
 
         /// <inheritdoc/>
@@ -79,8 +85,18 @@ namespace Avalonia.Controls
         /// </remarks>
         public new SelectionMode SelectionMode
         {
-            get { return base.SelectionMode; }
-            set { base.SelectionMode = value; }
+            get => base.SelectionMode;
+            set => base.SelectionMode = value;
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether selection will wrap when trying to move selection beyond
+        /// the last item or before the first item.
+        /// </summary>
+        public bool WrapSelection
+        {
+            get => GetValue(WrapSelectionProperty);
+            set => SetValue(WrapSelectionProperty, value);
         }
 
         /// <summary>
@@ -93,7 +109,6 @@ namespace Avalonia.Controls
         /// </summary>
         public void UnselectAll() => Selection.ClearSelection();
 
-        /// <inheritdoc/>
         protected override IItemContainerGenerator CreateItemContainerGenerator()
         {
             return new ItemContainerGenerator<ListBoxItem>(
@@ -102,22 +117,25 @@ namespace Avalonia.Controls
                 ListBoxItem.ContentTemplateProperty);
         }
 
-        /// <inheritdoc/>
-        protected override void OnGotFocus(GotFocusEventArgs e)
+        protected override void OnKeyDown(KeyEventArgs e)
         {
-            base.OnGotFocus(e);
-
-            if (e.NavigationMethod == NavigationMethod.Directional)
+            if (!e.Handled)
             {
-                e.Handled = UpdateSelectionFromEventSource(
-                    e.Source,
-                    true,
-                    (e.KeyModifiers & KeyModifiers.Shift) != 0,
-                    (e.KeyModifiers & KeyModifiers.Control) != 0);
+                var direction = e.Key.ToNavigationDirection();
+                var ctrl = e.KeyModifiers.HasFlagCustom(KeyModifiers.Control);
+                var shift = e.KeyModifiers.HasFlagCustom(KeyModifiers.Shift);
+
+                if (direction.HasValue && (!ctrl || shift))
+                {
+                    e.Handled = MoveSelection(
+                        direction.Value,
+                        shift);
+                }
             }
+
+            base.OnKeyDown(e);
         }
 
-        /// <inheritdoc/>
         protected override void OnPointerPressed(PointerPressedEventArgs e)
         {
             base.OnPointerPressed(e);

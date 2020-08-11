@@ -5,6 +5,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using Avalonia.Controls.Utils;
 using Avalonia.Data;
 using Avalonia.Input;
@@ -388,57 +389,24 @@ namespace Avalonia.Controls.Primitives
             }
         }
 
-        protected override void OnKeyDown(KeyEventArgs e)
-        {
-            base.OnKeyDown(e);
-
-            if (!e.Handled)
-            {
-                var keymap = AvaloniaLocator.Current.GetService<PlatformHotkeyConfiguration>();
-                bool Match(List<KeyGesture> gestures) => gestures.Any(g => g.Matches(e));
-
-                if (ItemCount > 0 &&
-                    Match(keymap.SelectAll) &&
-                    (((SelectionMode & SelectionMode.Multiple) != 0) ||
-                      (SelectionMode & SelectionMode.Toggle) != 0))
-                {
-                    Selection.SelectAll();
-                    e.Handled = true;
-                }
-            }
-        }
-
         /// <summary>
         /// Moves the selection in the specified direction relative to the current selection.
         /// </summary>
         /// <param name="direction">The direction to move.</param>
-        /// <param name="wrap">Whether to wrap when the selection reaches the first or last item.</param>
+        /// <param name="rangeModifier">Whether the range modifier is enabled (i.e. shift key).</param>
         /// <returns>True if the selection was moved; otherwise false.</returns>
-        protected bool MoveSelection(NavigationDirection direction, bool wrap)
+        protected bool MoveSelection(
+            NavigationDirection direction,
+            bool rangeModifier)
         {
-            var from = SelectedIndex != -1 ? TryGetContainer(SelectedIndex) : null;
-            return MoveSelection(from, direction, wrap);
-        }
+            var focus = FocusManager.Instance;
+            var next = focus?.FindNextElement(direction);
 
-        /// <summary>
-        /// Moves the selection in the specified direction relative to the specified container.
-        /// </summary>
-        /// <param name="from">The container which serves as a starting point for the movement.</param>
-        /// <param name="direction">The direction to move.</param>
-        /// <param name="wrap">Whether to wrap when the selection reaches the first or last item.</param>
-        /// <returns>True if the selection was moved; otherwise false.</returns>
-        protected bool MoveSelection(IControl? from, NavigationDirection direction, bool wrap)
-        {
-            if (Presenter is INavigableContainer container &&
-                GetNextControl(container, direction, from, wrap) is IControl next)
+            if (next is IControl c && GetContainerIndex(c) != -1)
             {
-                var index = GetContainerIndex(next);
-
-                if (index != -1)
-                {
-                    SelectedIndex = index;
-                    return true;
-                }
+                UpdateSelection(c, true, rangeModifier: rangeModifier);
+                focus?.Focus(c, direction.ToNavigationMethod());
+                return true;
             }
 
             return false;
